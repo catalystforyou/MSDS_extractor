@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 from tqdm import tqdm
 import time
 import pandas as pd
+import argparse
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -63,6 +64,8 @@ def cas2msds(sml, cas_number=False):
     response = requests.get(url, headers={'User-Agent': random.choice(user_agent), "connection": "close"}, timeout=5,
                             verify=False)  
     # print(response.text[20000:40000])
+    if '403 Forbid' in response.text:
+        return 0
     soup = BeautifulSoup(response.text, 'lxml')
     name = soup.find('title').text
     name = name[:name.find('_MSDS')]
@@ -84,15 +87,28 @@ def cas2msds(sml, cas_number=False):
     return props
 
 if __name__ == '__main__':
+    print('Welcome to the Automatic MSDS Extractor.')
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-f', "--file", default='sample', type=str, help='Please input the filename you want to predict, e.g. sample means MSDS_input_sample.txt')
+    args = parser.parse_args()
     # smiles = ["CC(C)(C(=O)Br)Br", '10061-68-4', 'Semicarbazide hydrochloride']
-    smiles = open('msds_input.txt').readlines()
+    smiles = open(f'msds_input_{args.file}.txt').readlines()
     msds = []
     for sml in tqdm(smiles):
         if CIRconvert(sml) != '':
-            msds.append(cas2msds(CIRconvert(sml)))
+            output = cas2msds(CIRconvert(sml))
+            while output == 0:
+                output = cas2msds(CIRconvert(sml))
+            msds.append(output)
         elif sml.upper() == sml.lower():
-            msds.append(cas2msds(sml, cas_number=True))
+            output = cas2msds(sml, cas_number=True)
+            while output == 0:
+                output = cas2msds(sml, cas_number=True)
+            msds.append(output)
         else:
-            msds.append(cas2msds(sml))
+            output = cas2msds(sml)
+            while output == 0:
+                output = cas2msds(sml)
+            msds.append(output)
     df = pd.DataFrame(msds)
-    df.to_csv('msds_'+time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime(time.time()))+'.csv', index=None, encoding='utf_8_sig')
+    df.to_csv(f'msds_{args.file}_'+time.strftime('%Y_%m_%d_%H_%M_%S', time.localtime(time.time()))+'.csv', index=None, encoding='utf_8_sig')

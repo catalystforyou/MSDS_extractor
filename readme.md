@@ -7,8 +7,8 @@
 
 ## Usage
 
-1. Typing the SMILES/English Name/CAS Number into the "msds_input.txt"(one molecule per line);
-2. Run `python extract_msds.py` on the current folder;
+1. Typing the SMILES/English Name/CAS Number into the "msds_input_${file}.txt"(one molecule per line);
+2. Run `python extract_msds.py -f ${file}` on the current folder(the default file is msds_input_sample.txt);
 3. The MSDS information will be extracted automatically into a csv file with timestamp;
 
 ## Tips
